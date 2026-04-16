@@ -2,13 +2,18 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Escala - Kyrios Festival</title>
     <style>
         :root {
             --cor-primaria: #b02e26;
             --cor-secundaria: #d4a017;
             --bg-gradiente: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            
+            /* Cores dos Turnos */
+            --bg-t1: #fffdf2; /* Amarelo solar suave */
+            --bg-t2: #fff5f0; /* Alaranjado entardecer */
+            --bg-t3: #f0f4f8; /* Azul noite claro */
         }
 
         body { 
@@ -18,39 +23,35 @@
         }
 
         h1 { color: var(--cor-primaria); font-size: 1.8rem; text-align: center; margin: 10px 0 5px 0; text-transform: uppercase; letter-spacing: 1px; }
-        p.data-evento { color: var(--cor-secundaria); margin-bottom: 20px; font-weight: bold; font-size: 1.1rem; text-align: center; }
+        p.instrucao { color: #666; margin-bottom: 20px; font-size: 0.9rem; text-align: center; font-style: italic; }
         
         .status-nuvem { 
             background: #fff; padding: 10px 20px; border-radius: 20px; 
-            font-size: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 12px; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             font-weight: bold; color: #666; border: 1px solid #eee;
         }
 
-        .cadastro { 
-            background: #fff; padding: 20px; border-radius: 15px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 30px; 
-            width: 100%; max-width: 400px; border: 1px solid #eee;
-        }
-
-        input, select, button { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--cor-primaria); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #8e241d; }
-        button:disabled { background: #ccc; }
-
         .painel { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 800px; }
-        .turno { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid var(--cor-primaria); }
-        .turno h2 { margin-top: 0; color: var(--cor-primaria); font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
+        .turno { border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 6px solid var(--cor-primaria); }
+        .turno h2 { margin-top: 0; color: var(--cor-primaria); font-size: 1.1rem; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px; }
+
+        /* Classes de Cores por Turno */
+        .turno-t1 { background-color: var(--bg-t1); }
+        .turno-t2 { background-color: var(--bg-t2); }
+        .turno-t3 { background-color: var(--bg-t3); }
 
         .caixas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; }
         
         .caixa { 
-            background: #f9f9f9; border: 1px solid #eee; padding: 12px; border-radius: 8px; 
-            text-align: center; border-left: 4px solid #ddd; cursor: pointer; transition: 0.2s;
+            background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(0,0,0,0.05); padding: 15px 10px; border-radius: 8px; 
+            text-align: center; border-left: 5px solid #ddd; cursor: pointer; transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
-        .caixa:hover { transform: translateY(-3px); box-shadow: 0 5px 10px rgba(0,0,0,0.1); border-color: var(--cor-secundaria); }
+        .caixa:hover { transform: translateY(-3px); box-shadow: 0 5px 10px rgba(0,0,0,0.08); border-color: var(--cor-secundaria); }
         
-        .caixa small { display: block; font-size: 0.65rem; color: #999; text-transform: uppercase; font-weight: bold; }
-        .caixa span { font-weight: bold; font-size: 0.95rem; color: #2c3e50; display: block; min-height: 1.2rem; }
+        .caixa small { display: block; font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .caixa span { font-weight: bold; font-size: 1rem; color: #2c3e50; display: block; min-height: 1.2rem; }
         .vago { color: #bdc3c7 !important; font-style: italic; font-weight: normal !important; }
 
         @media (max-width: 600px) { .caixas-grid { grid-template-columns: 1fr 1fr; } }
@@ -59,25 +60,8 @@
 <body>
 
     <h1>🎸 Kyrios Festival</h1>
-    <p class="data-evento">Escala de Caixas | 25 de Abril</p>
+    <p class="instrucao">Toque no caixa para preencher ou alterar</p>
     <div class="status-nuvem" id="status">Sincronizando...</div>
-
-    <div class="cadastro">
-        <input type="text" id="nomeInput" placeholder="Seu Nome">
-        
-        <select id="horaSelect" onchange="atualizarOpcoesCaixa()">
-            <option value="">Escolha o Turno</option>
-            <option value="T1">13:30 às 16:30</option>
-            <option value="T2">16:30 às 19:30</option>
-            <option value="T3">19:30 às 22:30</option>
-        </select>
-
-        <select id="caixaSelect">
-            <option value="">Escolha o Caixa</option>
-        </select>
-
-        <button id="btnSalvar" onclick="cadastrarAuto()">Confirmar Vaga</button>
-    </div>
 
     <div id="painelEscala" class="painel"></div>
 
@@ -86,9 +70,9 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbzosDRtHmaPqK1dckQNrEDOiqOwGqfwJ-20Ldh9QZiST45Nred4_5XTBiDGHtYeL-GN5w/exec";
 
     const config = {
-        "T1": { ids: [1,2,3,4,5,6,7], label: "13:30 às 16:30" },
-        "T2": { ids: [8,9,10,11,12,13,14], label: "16:30 às 19:30" },
-        "T3": { ids: [15,16,17,18,19,20,21], label: "19:30 às 22:30" }
+        "T1": { ids: [1,2,3,4,5,6,7], label: "Turno 1: 13:30 às 16:30", css: "turno-t1" },
+        "T2": { ids: [8,9,10,11,12,13,14], label: "Turno 2: 16:30 às 19:30", css: "turno-t2" },
+        "T3": { ids: [15,16,17,18,19,20,21], label: "Turno 3: 19:30 às 22:30", css: "turno-t3" }
     };
 
     const nomesCaixas = ["Fixo 1", "Fixo 2", "Fixo 3", "Volante 1", "Volante 2", "Volante 3", "Volante 4"];
@@ -100,38 +84,19 @@
             nomesDB = await res.json();
             document.getElementById('status').innerText = "✅ Atualizado: " + new Date().toLocaleTimeString();
             render();
-            atualizarOpcoesCaixa();
         } catch (e) {
             document.getElementById('status').innerText = "⚠️ Erro de Conexão";
         }
-    }
-
-    function atualizarOpcoesCaixa() {
-        const turno = document.getElementById('horaSelect').value;
-        const sel = document.getElementById('caixaSelect');
-        const valorAtual = sel.value; 
-        sel.innerHTML = '<option value="">Escolha o Caixa</option>';
-        if(!turno) return;
-
-        config[turno].ids.forEach((id, i) => {
-            const ocupado = nomesDB[id];
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.text = nomesCaixas[i] + (ocupado ? ` (${ocupado})` : "");
-            if(ocupado) opt.disabled = true;
-            sel.appendChild(opt);
-        });
-        sel.value = valorAtual;
     }
 
     function render() {
         const cont = document.getElementById('painelEscala');
         cont.innerHTML = '';
         for(let t in config) {
-            let html = `<div class="turno"><h2>🕒 ${config[t].label}</h2><div class="caixas-grid">`;
+            let html = `<div class="turno ${config[t].css}"><h2>🕒 ${config[t].label}</h2><div class="caixas-grid">`;
             config[t].ids.forEach((id, i) => {
                 const nome = nomesDB[id] || "";
-                html += `<div class="caixa" onclick="corrigirNome(${id}, '${nome}')" style="border-left-color: ${i<3?'#b02e26':'#d4a017'}">
+                html += `<div class="caixa" onclick="preencherVaga(${id}, '${nome}')" style="border-left-color: ${i<3?'#b02e26':'#d4a017'}">
                     <small>Caixa ${nomesCaixas[i]}</small>
                     <span class="${!nome?'vago':''}">${nome || 'Livre'}</span>
                 </div>`;
@@ -140,26 +105,26 @@
         }
     }
 
-    async function corrigirNome(id, nomeAtual) {
-        const novoNome = prompt(`Editar vaga de "${nomeAtual || 'Livre'}":\n(Deixe em branco para liberar)`, nomeAtual);
+    async function preencherVaga(id, nomeAtual) {
+        // Implementação da Sugestão 1: Confirmação extra se já estiver ocupado
+        if (nomeAtual) {
+            const confirmar = confirm(`Esta vaga já está ocupada por "${nomeAtual}".\nDeseja alterar ou remover este nome?`);
+            if (!confirmar) return; // Cancela se o usuário desistir
+        }
+
+        const msg = nomeAtual ? `Editar nome:` : `Digite seu nome para este caixa:`;
+        const novoNome = prompt(msg, nomeAtual);
+        
         if (novoNome !== null) {
             await salvar(id, novoNome.trim());
         }
     }
 
-    async function cadastrarAuto() {
-        const nome = document.getElementById('nomeInput').value.trim();
-        const id = document.getElementById('caixaSelect').value;
-        if(!nome || !id) return alert("Preencha seu nome e escolha o turno/caixa!");
-        await salvar(id, nome);
-    }
-
     async function salvar(id, nome) {
-        // ATUALIZAÇÃO OTIMISTA: Mostra na tela antes de chegar no Google
+        // Atualização Otimista
         nomesDB[id] = nome;
         render();
 
-        document.getElementById('btnSalvar').disabled = true;
         document.getElementById('status').innerText = "💾 Sincronizando...";
 
         try {
@@ -170,21 +135,17 @@
             });
             
             setTimeout(() => {
-                document.getElementById('btnSalvar').disabled = false;
-                document.getElementById('nomeInput').value = "";
-                document.getElementById('caixaSelect').value = "";
                 document.getElementById('status').innerText = "✅ Sincronizado!";
-            }, 800);
+                loadData(); 
+            }, 1000);
         } catch(e) {
-            alert("Erro ao salvar. Verifique sua internet.");
-            loadData(); // Recarrega para desfazer a alteração otimista
-            document.getElementById('btnSalvar').disabled = false;
+            alert("Erro ao salvar. Verifique sua conexão.");
+            loadData(); 
         }
     }
 
     loadData();
-    // SINCRONIZAÇÃO RÁPIDA: A cada 5 segundos
-    setInterval(loadData, 5000);
+    setInterval(loadData, 5000); // Sincronização rápida a cada 5 segundos
 </script>
 </body>
 </html>

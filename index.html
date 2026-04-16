@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escala - Kyrios Festival</title>
+    <style>
+        :root {
+            --cor-primaria: #b02e26; /* Vermelho Kyrios */
+            --cor-secundaria: #d4a017; /* Dourado */
+            --fundo-claro: rgba(244, 247, 246, 0.94);
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            min-height: 100vh;
+            
+            /* Imagem de Fundo Suave com Camada de Cor */
+            background: linear-gradient(var(--fundo-claro), var(--fundo-claro)), 
+                        url('images.png'); 
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+        }
+
+        h1 { color: var(--cor-primaria); font-size: 1.8rem; text-align: center; margin: 10px 0 5px 0; text-transform: uppercase; letter-spacing: 1px; }
+        p.data-evento { color: var(--cor-secundaria); margin-bottom: 20px; font-weight: bold; font-size: 1.1rem; text-align: center; }
+        
+        .status-nuvem { 
+            background: rgba(255, 255, 255, 0.8); padding: 10px 20px; border-radius: 20px; 
+            font-size: 13px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-weight: bold; color: #666; border: 1px solid #eee;
+        }
+
+        .painel { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 850px; }
+        
+        .turno { 
+            background: rgba(255, 255, 255, 0.9); border-radius: 12px; padding: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 8px solid var(--cor-primaria); 
+        }
+        .turno h2 { margin-top: 0; color: var(--cor-primaria); font-size: 1.2rem; display: flex; justify-content: space-between; }
+
+        .caixas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; }
+        
+        .caixa { 
+            background: #fff; border: 1px solid #e0e0e0; padding: 12px; border-radius: 8px; 
+            text-align: center; cursor: pointer; transition: all 0.2s;
+        }
+        .caixa:hover { transform: translateY(-2px); border-color: var(--cor-secundaria); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .caixa small { display: block; font-size: 0.65rem; color: #95a5a6; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
+        .caixa span { font-weight: bold; font-size: 0.95rem; color: #2c3e50; display: block; min-height: 1.2rem; }
+        .vago { color: #cbd5e0 !important; font-weight: normal !important; font-style: italic; }
+
+        .cadastro { 
+            background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 15px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin-bottom: 30px; 
+            width: 100%; max-width: 450px; border: 1px solid #e0e0e0;
+        }
+        input, select, button { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; outline: none; box-sizing: border-box; }
+        button { background: var(--cor-primaria); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.3s; }
+        button:hover { background: #8e241d; }
+        button:disabled { background: #bdc3c7; }
+
+        .tag-fixa { border-bottom: 3px solid var(--cor-primaria); }
+        .tag-volante { border-bottom: 3px solid var(--cor-secundaria); }
+
+        @media (max-width: 600px) { .caixas-grid { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+
+    <h1>🎸 Kyrios Festival</h1>
+    <p class="data-evento">Escala de Caixas - 25 de Abril</p>
+    <div class="status-nuvem" id="status">Sincronizando...</div>
+
+    <div class="cadastro">
+        <input type="text" id="nomeInput" placeholder="Seu Nome Completo">
+        <select id="horaSelect">
+            <option value="">Escolha o Turno</option>
+            <option value="T1">13:30 às 16:30</option>
+            <option value="T2">16:30 às 19:30</option>
+            <option value="T3">19:30 às 22:30</option>
+        </select>
+        <button id="btnSalvar" onclick="cadastrarAuto()">Confirmar Disponibilidade</button>
+    </div>
+
+    <div class="painel" id="painelEscala"></div>
+
+<script>
+    // Substitua pela sua URL do Google Apps Script
+    const API_URL = "SUA_URL_DO_APPS_SCRIPT_AQUI";
+
+    const config = {
+        "T1": { label: "13:30 às 16:30", ids: [1,2,3,4,5,6,7] },
+        "T2": { label: "16:30 às 19:30", ids: [8,9,10,11,12,13,14] },
+        "T3": { label: "19:30 às 22:30", ids: [15,16,17,18,19,20,21] }
+    };
+
+    let nomesDB = {};
+
+    async function loadData() {
+        const status = document.getElementById('status');
+        try {
+            const response = await fetch(`${API_URL}?t=${new Date().getTime()}`);
+            const data = await response.json();
+            nomesDB = data;
+            renderPainel();
+            status.innerText = "✅ Sincronizado: " + new Date().toLocaleTimeString();
+            status.style.color = "#27ae60";
+        } catch (e) {
+            status.innerText = "⚠️ Modo Visualização (Offline)";
+            renderPainel();
+        }
+    }
+
+    function renderPainel() {
+        const container = document.getElementById('painelEscala');
+        container.innerHTML = '';
+
+        for (let turnoKey in config) {
+            const turno = config[turnoKey];
+            let html = `
+                <div class="turno">
+                    <h2>🕒 ${turno.label} <span>Turno ${turnoKey.slice(1)}</span></h2>
+                    <div class="caixas-grid">`;
+            
+            turno.ids.forEach((id, index) => {
+                const isFixa = index < 3;
+                const tipo = isFixa ? "Fixa" : "Volante";
+                const classeTag = isFixa ? "tag-fixa" : "tag-volante";
+                const nome = nomesDB[id] ? String(nomesDB[id]).trim() : "";
+
+                html += `
+                    <div class="caixa ${classeTag}" onclick="editManual(${id}, '${nome}')">
+                        <small>${tipo} ${index + 1}</small>
+                        <span class="${!nome ? 'vago' : ''}">${nome || 'Livre'}</span>
+                    </div>`;
+            });
+
+            html += `</div></div>`;
+            container.innerHTML += html;
+        }
+    }
+
+    async function cadastrarAuto() {
+        const nome = document.getElementById('nomeInput').value.trim();
+        const turnoKey = document.getElementById('horaSelect').value;
+        if(!nome || !turnoKey) return alert("Preencha o nome e o turno!");
+
+        const idsTurno = config[turnoKey].ids;
+        let idVago = idsTurno.find(id => !nomesDB[id]);
+
+        if(!idVago) return alert("Turno lotado!");
+        await salvar(idVago, nome);
+    }
+
+    async function editManual(id, nomeAtual) {
+        const novo = prompt("Nome do Operador:", nomeAtual === "Livre" ? "" : nomeAtual);
+        if(novo !== null) await salvar(id, novo.trim());
+    }
+
+    async function salvar(id, nome) {
+        document.getElementById('status').innerText = "💾 Gravando...";
+        document.getElementById('btnSalvar').disabled = true;
+        try {
+            await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({id, nome}) });
+            setTimeout(() => {
+                loadData();
+                document.getElementById('btnSalvar').disabled = false;
+                document.getElementById('nomeInput').value = '';
+                document.getElementById('horaSelect').value = '';
+            }, 1500);
+        } catch (e) {
+            alert("Erro ao salvar.");
+            document.getElementById('btnSalvar').disabled = false;
+        }
+    }
+
+    loadData();
+    setInterval(loadData, 30000);
+</script>
+</body>
+</html>

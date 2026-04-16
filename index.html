@@ -26,36 +26,23 @@
             font-weight: bold; color: #666; border: 1px solid #eee;
         }
 
-        .painel { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 800px; }
-        
-        .turno { 
-            background: #fff; border-radius: 12px; padding: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid var(--cor-primaria); 
-        }
-        .turno h2 { margin-top: 0; color: var(--cor-primaria); font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-
-        .caixas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; }
-        
-        .caixa { 
-            background: #f9f9f9; border: 1px solid #eee; padding: 12px; border-radius: 8px; 
-            text-align: center; cursor: pointer; transition: all 0.2s;
-        }
-        .caixa:hover { background: #fff; border-color: var(--cor-secundaria); transform: translateY(-2px); }
-        .caixa small { display: block; font-size: 0.65rem; color: #999; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
-        .caixa span { font-weight: bold; font-size: 0.95rem; color: #2c3e50; display: block; min-height: 1.2rem; }
-        .vago { color: #bdc3c7 !important; font-weight: normal !important; font-style: italic; }
-
-        .tag-fixa { border-left: 4px solid var(--cor-primaria); }
-        .tag-volante { border-left: 4px solid var(--cor-secundaria); }
-
         .cadastro { 
             background: #fff; padding: 20px; border-radius: 15px; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 30px; 
             width: 100%; max-width: 400px; border: 1px solid #eee;
         }
-        input, select, button { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; outline: none; box-sizing: border-box; }
-        button { background: var(--cor-primaria); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #8e241d; }
+
+        input, select, button { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; box-sizing: border-box; }
+        button { background: var(--cor-primaria); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #ccc; }
+
+        .painel { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 800px; }
+        .turno { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid var(--cor-primaria); }
+        .caixas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; }
+        .caixa { background: #f9f9f9; border: 1px solid #eee; padding: 12px; border-radius: 8px; text-align: center; border-left: 4px solid #ddd; }
+        .caixa small { display: block; font-size: 0.65rem; color: #999; text-transform: uppercase; font-weight: bold; }
+        .caixa span { font-weight: bold; font-size: 0.95rem; color: #2c3e50; }
+        .vago { color: #bdc3c7 !important; font-style: italic; }
 
         @media (max-width: 600px) { .caixas-grid { grid-template-columns: 1fr 1fr; } }
     </style>
@@ -64,116 +51,98 @@
 
     <h1>🎸 Kyrios Festival</h1>
     <p class="data-evento">Escala de Caixas | 25 de Abril</p>
-    <div class="status-nuvem" id="status">Conectando...</div>
+    <div class="status-nuvem" id="status">Sincronizando...</div>
 
     <div class="cadastro">
         <input type="text" id="nomeInput" placeholder="Seu Nome">
-        
         <select id="horaSelect" onchange="atualizarOpcoesCaixa()">
             <option value="">Escolha o Turno</option>
             <option value="T1">13:30 às 16:30</option>
             <option value="T2">16:30 às 19:30</option>
             <option value="T3">19:30 às 22:30</option>
         </select>
-
         <select id="caixaSelect">
             <option value="">Escolha o Caixa</option>
         </select>
-
-        <button id="btnSalvar" onclick="cadastrarAuto()">Confirmar Escala</button>
+        <button id="btnSalvar" onclick="cadastrarAuto()">Confirmar Vaga</button>
     </div>
 
-    <div class="painel" id="painelEscala"></div>
+    <div id="painelEscala" class="painel"></div>
 
 <script>
-    const API_URL = "SUA_URL_AQUI";
+    // ⚠️ COLOQUE SEU LINK ABAIXO
+    const API_URL = "SUA_URL_DO_GOOGLE_SCRIPT_AQUI";
 
     const config = {
-        "T1": { label: "13:30 às 16:30", ids: [1,2,3,4,5,6,7] },
-        "T2": { label: "16:30 às 19:30", ids: [8,9,10,11,12,13,14] },
-        "T3": { label: "19:30 às 22:30", ids: [15,16,17,18,19,20,21] }
+        "T1": { ids: [1,2,3,4,5,6,7], label: "13:30 às 16:30" },
+        "T2": { ids: [8,9,10,11,12,13,14], label: "16:30 às 19:30" },
+        "T3": { ids: [15,16,17,18,19,20,21], label: "19:30 às 22:30" }
     };
 
-    const nomesCaixas = [
-        "Caixa Fixo 1", "Caixa Fixo 2", "Caixa Fixo 3",
-        "Caixa Volante 1", "Caixa Volante 2", "Caixa Volante 3", "Caixa Volante 4"
-    ];
-
+    const nomesCaixas = ["Fixo 1", "Fixo 2", "Fixo 3", "Volante 1", "Volante 2", "Volante 3", "Volante 4"];
     let nomesDB = {};
 
     async function loadData() {
-        const status = document.getElementById('status');
         try {
-            const response = await fetch(`${API_URL}?t=${new Date().getTime()}`);
-            nomesDB = await response.json();
-            renderPainel();
+            const res = await fetch(API_URL);
+            nomesDB = await res.json();
+            document.getElementById('status').innerText = "✅ Online: " + new Date().toLocaleTimeString();
+            render();
             atualizarOpcoesCaixa();
-            status.innerText = "✅ Atualizado: " + new Date().toLocaleTimeString();
         } catch (e) {
-            status.innerText = "⚠️ Modo Offline";
-            renderPainel();
+            document.getElementById('status').innerText = "⚠️ Erro de Conexão";
         }
     }
 
     function atualizarOpcoesCaixa() {
         const turno = document.getElementById('horaSelect').value;
-        const selectCaixa = document.getElementById('caixaSelect');
-        selectCaixa.innerHTML = '<option value="">Escolha o Caixa</option>';
+        const sel = document.getElementById('caixaSelect');
+        sel.innerHTML = '<option value="">Escolha o Caixa</option>';
+        if(!turno) return;
 
-        if (turno) {
-            config[turno].ids.forEach((id, index) => {
-                const nomeOcupado = nomesDB[id] ? ` (${nomesDB[id]})` : "";
-                const option = document.createElement('option');
-                option.value = id;
-                option.text = nomesCaixas[index] + nomeOcupado;
-                if (nomesDB[id]) option.disabled = true;
-                selectCaixa.appendChild(option);
-            });
-        }
+        config[turno].ids.forEach((id, i) => {
+            const ocupado = nomesDB[id];
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.text = nomesCaixas[i] + (ocupado ? ` (${ocupado})` : "");
+            if(ocupado) opt.disabled = true;
+            sel.appendChild(opt);
+        });
     }
 
-    function renderPainel() {
-        const container = document.getElementById('painelEscala');
-        container.innerHTML = '';
-        for (let t in config) {
+    function render() {
+        const cont = document.getElementById('painelEscala');
+        cont.innerHTML = '';
+        for(let t in config) {
             let html = `<div class="turno"><h2>🕒 ${config[t].label}</h2><div class="caixas-grid">`;
-            config[t].ids.forEach((id, index) => {
-                const tipo = nomesCaixas[index];
-                const classe = index < 3 ? "tag-fixa" : "tag-volante";
-                const nome = nomesDB[id] ? String(nomesDB[id]).trim() : "";
-                html += `<div class="caixa ${classe}" onclick="editManual(${id},'${nome}')"><small>${tipo}</small><span class="${!nome?'vago':''}">${nome||'Livre'}</span></div>`;
+            config[t].ids.forEach((id, i) => {
+                const nome = nomesDB[id] || "";
+                html += `<div class="caixa" style="border-left-color: ${i<3?'#b02e26':'#d4a017'}">
+                    <small>Caixa ${nomesCaixas[i]}</small>
+                    <span class="${!nome?'vago':''}">${nome || 'Livre'}</span>
+                </div>`;
             });
-            container.innerHTML += html + `</div></div>`;
+            cont.innerHTML += html + `</div></div>`;
         }
     }
 
     async function cadastrarAuto() {
         const nome = document.getElementById('nomeInput').value.trim();
-        const idEscolhido = document.getElementById('caixaSelect').value;
-        
-        if(!nome || !idEscolhido) return alert("Por favor, preencha seu nome e selecione o turno/caixa!");
-        
-        await salvar(idEscolhido, nome);
-    }
+        const id = document.getElementById('caixaSelect').value;
+        if(!nome || !id) return alert("Preencha nome e escolha o caixa!");
 
-    async function editManual(id, atual) {
-        const novo = prompt("Nome do Operador:", atual === "Livre" ? "" : atual);
-        if(novo !== null) await salvar(id, novo.trim());
-    }
-
-    async function salvar(id, nome) {
-        document.getElementById('status').innerText = "💾 Salvando...";
         document.getElementById('btnSalvar').disabled = true;
+        document.getElementById('status').innerText = "💾 Gravando...";
+
         try {
             await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({id, nome}) });
             setTimeout(() => {
                 loadData();
                 document.getElementById('btnSalvar').disabled = false;
-                document.getElementById('nomeInput').value = '';
-                document.getElementById('caixaSelect').value = '';
-            }, 1200);
-        } catch (e) {
-            alert("Erro ao salvar.");
+                document.getElementById('nomeInput').value = "";
+            }, 1500);
+        } catch(e) {
+            alert("Erro ao salvar");
             document.getElementById('btnSalvar').disabled = false;
         }
     }

@@ -6,8 +6,8 @@
     <title>Escala - Kyrios Festival</title>
     <style>
         :root {
-            --cor-primaria: #b02e26; /* Vermelho Kyrios */
-            --cor-secundaria: #d4a017; /* Dourado */
+            --cor-primaria: #b02e26;
+            --cor-secundaria: #d4a017;
             --fundo-claro: rgba(244, 247, 246, 0.94);
         }
 
@@ -19,8 +19,6 @@
             flex-direction: column; 
             align-items: center;
             min-height: 100vh;
-            
-            /* Imagem de Fundo Suave com Camada de Cor */
             background: linear-gradient(var(--fundo-claro), var(--fundo-claro)), 
                         url('images.png'); 
             background-attachment: fixed;
@@ -92,7 +90,7 @@
     <div class="painel" id="painelEscala"></div>
 
 <script>
-    // Substitua pela sua URL do Google Apps Script
+    // IMPORTANTE: Cole aqui a sua URL do Google Apps Script para salvar os dados
     const API_URL = "SUA_URL_DO_APPS_SCRIPT_AQUI";
 
     const config = {
@@ -121,27 +119,16 @@
     function renderPainel() {
         const container = document.getElementById('painelEscala');
         container.innerHTML = '';
-
         for (let turnoKey in config) {
             const turno = config[turnoKey];
-            let html = `
-                <div class="turno">
-                    <h2>🕒 ${turno.label} <span>Turno ${turnoKey.slice(1)}</span></h2>
-                    <div class="caixas-grid">`;
-            
+            let html = `<div class="turno"><h2>🕒 ${turno.label} <span>Turno ${turnoKey.slice(1)}</span></h2><div class="caixas-grid">`;
             turno.ids.forEach((id, index) => {
                 const isFixa = index < 3;
                 const tipo = isFixa ? "Fixa" : "Volante";
                 const classeTag = isFixa ? "tag-fixa" : "tag-volante";
                 const nome = nomesDB[id] ? String(nomesDB[id]).trim() : "";
-
-                html += `
-                    <div class="caixa ${classeTag}" onclick="editManual(${id}, '${nome}')">
-                        <small>${tipo} ${index + 1}</small>
-                        <span class="${!nome ? 'vago' : ''}">${nome || 'Livre'}</span>
-                    </div>`;
+                html += `<div class="caixa ${classeTag}" onclick="editManual(${id}, '${nome}')"><small>${tipo} ${index + 1}</small><span class="${!nome ? 'vago' : ''}">${nome || 'Livre'}</span></div>`;
             });
-
             html += `</div></div>`;
             container.innerHTML += html;
         }
@@ -151,10 +138,8 @@
         const nome = document.getElementById('nomeInput').value.trim();
         const turnoKey = document.getElementById('horaSelect').value;
         if(!nome || !turnoKey) return alert("Preencha o nome e o turno!");
-
         const idsTurno = config[turnoKey].ids;
         let idVago = idsTurno.find(id => !nomesDB[id]);
-
         if(!idVago) return alert("Turno lotado!");
         await salvar(idVago, nome);
     }

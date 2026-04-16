@@ -82,7 +82,7 @@
     <div id="painelEscala" class="painel"></div>
 
 <script>
-    // ⚠️ SUBSTITUA PELO SEU LINK DO GOOGLE APPS SCRIPT (URL que termina em /exec)
+    // ⚠️ SUBSTITUA PELO SEU LINK DO GOOGLE APPS SCRIPT (/exec)
     const API_URL = "https://script.google.com/macros/s/AKfycbzosDRtHmaPqK1dckQNrEDOiqOwGqfwJ-20Ldh9QZiST45Nred4_5XTBiDGHtYeL-GN5w/exec";
 
     const config = {
@@ -98,7 +98,7 @@
         try {
             const res = await fetch(`${API_URL}?t=${new Date().getTime()}`);
             nomesDB = await res.json();
-            document.getElementById('status').innerText = "✅ Online: " + new Date().toLocaleTimeString();
+            document.getElementById('status').innerText = "✅ Atualizado: " + new Date().toLocaleTimeString();
             render();
             atualizarOpcoesCaixa();
         } catch (e) {
@@ -109,6 +109,7 @@
     function atualizarOpcoesCaixa() {
         const turno = document.getElementById('horaSelect').value;
         const sel = document.getElementById('caixaSelect');
+        const valorAtual = sel.value; 
         sel.innerHTML = '<option value="">Escolha o Caixa</option>';
         if(!turno) return;
 
@@ -120,6 +121,7 @@
             if(ocupado) opt.disabled = true;
             sel.appendChild(opt);
         });
+        sel.value = valorAtual;
     }
 
     function render() {
@@ -139,9 +141,7 @@
     }
 
     async function corrigirNome(id, nomeAtual) {
-        const acao = nomeAtual ? `corrigir o nome de "${nomeAtual}"` : "adicionar um nome";
-        const novoNome = prompt(`Deseja ${acao}? (Deixe em branco para liberar a vaga)`, nomeAtual);
-        
+        const novoNome = prompt(`Editar vaga de "${nomeAtual || 'Livre'}":\n(Deixe em branco para liberar)`, nomeAtual);
         if (novoNome !== null) {
             await salvar(id, novoNome.trim());
         }
@@ -150,14 +150,17 @@
     async function cadastrarAuto() {
         const nome = document.getElementById('nomeInput').value.trim();
         const id = document.getElementById('caixaSelect').value;
-        if(!nome || !id) return alert("Por favor, preencha seu nome e escolha o turno/caixa!");
-        
+        if(!nome || !id) return alert("Preencha seu nome e escolha o turno/caixa!");
         await salvar(id, nome);
     }
 
     async function salvar(id, nome) {
+        // ATUALIZAÇÃO OTIMISTA: Mostra na tela antes de chegar no Google
+        nomesDB[id] = nome;
+        render();
+
         document.getElementById('btnSalvar').disabled = true;
-        document.getElementById('status').innerText = "💾 Gravando...";
+        document.getElementById('status').innerText = "💾 Sincronizando...";
 
         try {
             await fetch(API_URL, { 
@@ -166,23 +169,22 @@
                 body: JSON.stringify({id, nome}) 
             });
             
-            // Aguarda um pouco para o Google processar e recarrega
             setTimeout(() => {
-                loadData();
                 document.getElementById('btnSalvar').disabled = false;
                 document.getElementById('nomeInput').value = "";
                 document.getElementById('caixaSelect').value = "";
-            }, 1200);
+                document.getElementById('status').innerText = "✅ Sincronizado!";
+            }, 800);
         } catch(e) {
-            alert("Erro ao salvar. Verifique sua conexão.");
+            alert("Erro ao salvar. Verifique sua internet.");
+            loadData(); // Recarrega para desfazer a alteração otimista
             document.getElementById('btnSalvar').disabled = false;
         }
     }
 
-    // Inicialização
     loadData();
-    // Atualiza automaticamente a cada 30 segundos
-    setInterval(loadData, 30000);
+    // SINCRONIZAÇÃO RÁPIDA: A cada 5 segundos
+    setInterval(loadData, 5000);
 </script>
 </body>
 </html>

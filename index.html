@@ -13,14 +13,8 @@
 
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 15px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-            min-height: 100vh;
-            background: var(--bg-gradiente);
-            color: #333;
+            margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; background: var(--bg-gradiente); color: #333;
         }
 
         h1 { color: var(--cor-primaria); font-size: 1.8rem; text-align: center; margin: 10px 0 5px 0; text-transform: uppercase; letter-spacing: 1px; }
@@ -38,7 +32,7 @@
             background: #fff; border-radius: 12px; padding: 20px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid var(--cor-primaria); 
         }
-        .turno h2 { margin-top: 0; color: var(--cor-primaria); font-size: 1.1rem; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .turno h2 { margin-top: 0; color: var(--cor-primaria); font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
 
         .caixas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; }
         
@@ -46,7 +40,7 @@
             background: #f9f9f9; border: 1px solid #eee; padding: 12px; border-radius: 8px; 
             text-align: center; cursor: pointer; transition: all 0.2s;
         }
-        .caixa:hover { background: #fff; border-color: var(--cor-secundaria); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .caixa:hover { background: #fff; border-color: var(--cor-secundaria); transform: translateY(-2px); }
         .caixa small { display: block; font-size: 0.65rem; color: #999; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
         .caixa span { font-weight: bold; font-size: 0.95rem; color: #2c3e50; display: block; min-height: 1.2rem; }
         .vago { color: #bdc3c7 !important; font-weight: normal !important; font-style: italic; }
@@ -73,27 +67,37 @@
     <div class="status-nuvem" id="status">Conectando...</div>
 
     <div class="cadastro">
-        <input type="text" id="nomeInput" placeholder="Nome Completo">
-        <select id="horaSelect">
+        <input type="text" id="nomeInput" placeholder="Seu Nome">
+        
+        <select id="horaSelect" onchange="atualizarOpcoesCaixa()">
             <option value="">Escolha o Turno</option>
             <option value="T1">13:30 às 16:30</option>
             <option value="T2">16:30 às 19:30</option>
             <option value="T3">19:30 às 22:30</option>
         </select>
-        <button id="btnSalvar" onclick="cadastrarAuto()">Confirmar Vaga</button>
+
+        <select id="caixaSelect">
+            <option value="">Escolha o Caixa</option>
+        </select>
+
+        <button id="btnSalvar" onclick="cadastrarAuto()">Confirmar Escala</button>
     </div>
 
     <div class="painel" id="painelEscala"></div>
 
 <script>
-    // IMPORTANTE: Insira sua URL do Apps Script abaixo
-    const API_URL = "https://script.google.com/macros/s/AKfycbzosDRtHmaPqK1dckQNrEDOiqOwGqfwJ-20Ldh9QZiST45Nred4_5XTBiDGHtYeL-GN5w/exec";
+    const API_URL = "SUA_URL_AQUI";
 
     const config = {
         "T1": { label: "13:30 às 16:30", ids: [1,2,3,4,5,6,7] },
         "T2": { label: "16:30 às 19:30", ids: [8,9,10,11,12,13,14] },
         "T3": { label: "19:30 às 22:30", ids: [15,16,17,18,19,20,21] }
     };
+
+    const nomesCaixas = [
+        "Caixa Fixo 1", "Caixa Fixo 2", "Caixa Fixo 3",
+        "Caixa Volante 1", "Caixa Volante 2", "Caixa Volante 3", "Caixa Volante 4"
+    ];
 
     let nomesDB = {};
 
@@ -103,10 +107,28 @@
             const response = await fetch(`${API_URL}?t=${new Date().getTime()}`);
             nomesDB = await response.json();
             renderPainel();
+            atualizarOpcoesCaixa();
             status.innerText = "✅ Atualizado: " + new Date().toLocaleTimeString();
         } catch (e) {
             status.innerText = "⚠️ Modo Offline";
             renderPainel();
+        }
+    }
+
+    function atualizarOpcoesCaixa() {
+        const turno = document.getElementById('horaSelect').value;
+        const selectCaixa = document.getElementById('caixaSelect');
+        selectCaixa.innerHTML = '<option value="">Escolha o Caixa</option>';
+
+        if (turno) {
+            config[turno].ids.forEach((id, index) => {
+                const nomeOcupado = nomesDB[id] ? ` (${nomesDB[id]})` : "";
+                const option = document.createElement('option');
+                option.value = id;
+                option.text = nomesCaixas[index] + nomeOcupado;
+                if (nomesDB[id]) option.disabled = true;
+                selectCaixa.appendChild(option);
+            });
         }
     }
 
@@ -116,11 +138,10 @@
         for (let t in config) {
             let html = `<div class="turno"><h2>🕒 ${config[t].label}</h2><div class="caixas-grid">`;
             config[t].ids.forEach((id, index) => {
-                // Termo atualizado para CAIXA
-                const tipo = index < 3 ? "Caixa Fixo" : "Caixa Volante";
+                const tipo = nomesCaixas[index];
                 const classe = index < 3 ? "tag-fixa" : "tag-volante";
                 const nome = nomesDB[id] ? String(nomesDB[id]).trim() : "";
-                html += `<div class="caixa ${classe}" onclick="editManual(${id},'${nome}')"><small>${tipo} ${index+1}</small><span class="${!nome?'vago':''}">${nome||'Livre'}</span></div>`;
+                html += `<div class="caixa ${classe}" onclick="editManual(${id},'${nome}')"><small>${tipo}</small><span class="${!nome?'vago':''}">${nome||'Livre'}</span></div>`;
             });
             container.innerHTML += html + `</div></div>`;
         }
@@ -128,16 +149,15 @@
 
     async function cadastrarAuto() {
         const nome = document.getElementById('nomeInput').value.trim();
-        const turno = document.getElementById('horaSelect').value;
-        if(!nome || !turno) return alert("Preencha todos os campos!");
-        const vago = config[turno].ids.find(id => !nomesDB[id]);
-        if(!vago) return alert("Turno sem vagas!");
-        await salvar(vago, nome);
+        const idEscolhido = document.getElementById('caixaSelect').value;
+        
+        if(!nome || !idEscolhido) return alert("Por favor, preencha seu nome e selecione o turno/caixa!");
+        
+        await salvar(idEscolhido, nome);
     }
 
     async function editManual(id, atual) {
-        // Termo atualizado para CAIXA
-        const novo = prompt("Nome do Operador de Caixa:", atual === "Livre" ? "" : atual);
+        const novo = prompt("Nome do Operador:", atual === "Livre" ? "" : atual);
         if(novo !== null) await salvar(id, novo.trim());
     }
 
@@ -150,6 +170,7 @@
                 loadData();
                 document.getElementById('btnSalvar').disabled = false;
                 document.getElementById('nomeInput').value = '';
+                document.getElementById('caixaSelect').value = '';
             }, 1200);
         } catch (e) {
             alert("Erro ao salvar.");
